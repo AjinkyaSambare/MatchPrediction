@@ -6,7 +6,7 @@ from datetime import datetime
 def load_model():
     """Load model artifacts"""
     try:
-        model_artifacts = joblib.load('../models/cricket_predictor_v3.pkl')
+        model_artifacts = joblib.load('models/cricket_predictor_v3.pkl')
         return model_artifacts
     except Exception as e:
         st.error(f"Error loading model: {str(e)}")
