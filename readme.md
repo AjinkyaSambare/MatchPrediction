@@ -1,6 +1,8 @@
+# Cricket Match Prediction System
+
 ## Join the Community
 [Curious PM Community](https://curious.pm) to connect, share, and learn with others!
-# Cricket Match Prediction System
+
 ## Introduction
 
 This project harnesses machine learning to predict outcomes of One Day International (ODI) cricket matches. By analyzing historical data from matches, team performances, and venue characteristics, the system provides informed predictions through a web interface.
@@ -8,9 +10,10 @@ This project harnesses machine learning to predict outcomes of One Day Internati
 ## System Overview
 
 The system comprises three main components, structured to handle different aspects of the machine learning pipeline:
-1. **Data Processing**: Scripts to clean and prepare data for modeling.
-2. **Model Training**: Scripts to train and optimize the machine learning model.
-3. **Web Interface**: A user-friendly interface to interact with the model and obtain predictions.
+
+* Data Processing: Scripts to clean and prepare data for modeling
+* Model Training: Scripts to train and optimize the machine learning model
+* Web Interface: A user-friendly interface to interact with the model and obtain predictions
 
 ## Directory Structure
 
@@ -34,13 +37,13 @@ MatchPrediction/
 
 ### Data Processing (`preprocess.py`)
 
-- **Purpose**: To transform raw match data into a format suitable for analysis and modeling.
-- **Process**:
-  - **Load Data**: Combines match detail and ball-by-ball action into a comprehensive dataset.
-  - **Filter Data**: Removes matches involving non-standard teams like 'World XI'.
-  - **Aggregate Statistics**: Computes match-level statistics like total runs and wickets.
-  - **Generate Features**: Creates features such as team win rates and venue statistics.
-  - **Encode Categoricals**: Converts textual data into numerical format using label encoding.
+* Purpose: To transform raw match data into a format suitable for analysis and modeling
+* Process:
+  * Load Data: Combines match detail and ball-by-ball action into a comprehensive dataset
+  * Filter Data: Removes matches involving non-standard teams like 'World XI'
+  * Aggregate Statistics: Computes match-level statistics like total runs and wickets
+  * Generate Features: Creates features such as team win rates and venue statistics
+  * Encode Categoricals: Converts textual data into numerical format using label encoding
 
 ### Detailed Explantion to Preprocessing Script for Cricket Match Prediction System
 
@@ -58,12 +61,10 @@ def load_data():
     return match_data, match_info
 ```
 
-- **match_data.csv**: Contains detailed ball-by-ball action.
-- **match_info.csv**: Includes general information about each match.
+* match_data.csv: Contains detailed ball-by-ball action
+* match_info.csv: Includes general information about each match
 
 ## 2. Filtering Special Teams
-
-The `filter_special_teams` function removes matches involving exhibition or special teams, which might skew the analysis.
 
 ```python
 def filter_special_teams(data):
@@ -75,11 +76,9 @@ def filter_special_teams(data):
     return filtered_data
 ```
 
-- **Purpose**: Ensures the data only includes official international matches.
+* Purpose: Ensures the data only includes official international matches
 
 ## 3. Aggregating Match Data
-
-The `aggregate_match_data` function converts ball-by-ball data to match-level statistics.
 
 ```python
 def aggregate_match_data(match_data):
@@ -94,120 +93,57 @@ def aggregate_match_data(match_data):
         'wicket_type': lambda x: x.notna().sum(),  # Count wickets
         'ball': 'count'  # Count balls
     }).reset_index()
-    match_stats['total_runs'] = (match_stats['runs_off_bat'] + match_stats['extras'])
-    return match_stats.pivot(index='match_id', columns='innings', values=['total_runs', 'wickets', 'balls_faced', 'extras'])
 ```
 
-- **Result**: Provides a summarized view of each match by innings, which is crucial for feature engineering.
+* Result: Provides a summarized view of each match by innings
 
 ## 4. Creating Team Features
-
-The `create_team_features` function calculates historical performance metrics for teams.
 
 ```python
 def create_team_features(data):
     """Create team performance features"""
     data = data.sort_values('date')
-    team_stats = {team: {'matches_played': len(matches), 'win_rate': len(matches[matches['winner'] == team]) / len(matches) if len(matches) > 0 else 0} for team in pd.concat([data['team1'], data['team2']]).unique()}
+    team_stats = {}
+    for team in teams:
+        team_matches = data[(data['team1'] == team) | (data['team2'] == team)]
+        win_rate = len(team_matches[team_matches['winner'] == team]) / len(team_matches)
+        team_stats[team] = {
+            'matches_played': len(team_matches),
+            'win_rate': win_rate
+        }
     return data
 ```
 
-- **Calculations**: Include matches played and win rates, which help the model understand past performances.
+* Calculations: Include matches played and win rates
 
 ## 5. Processing Venue Features
-
-The `process_venue_features` function computes statistics related to match venues.
 
 ```python
 def process_venue_features(data):
     """Process venue-related features"""
-    venue_stats = data.groupby('venue').agg({'match_id': 'count'}).rename(columns={'match_id': 'matches_at_venue'})
-    return data.merge(venue_stats, on='venue', how='left')
+    venue_stats = data.groupby('venue').agg({
+        'match_id': 'count'
+    }).reset_index()
+    venue_stats.columns = ['venue', 'matches_at_venue']
+    return pd.merge(data, venue_stats, on='venue', how='left')
 ```
 
-- **Venue Impact**: Considers how often each venue is used, which could influence match outcomes.
-
-## 6. Creating Match Features
-
-The `create_match_features` function extracts date and toss-related features.
-
-```python
-def create_match_features(data):
-    """Create match-specific features"""
-    data['year'] = pd.to_datetime(data['date']).dt.year
-    data['month'] = pd.to_datetime(data['date']).dt.month
-    data['day_of_week'] = pd.to_datetime(data['date']).dt.dayofweek
-    data['toss_winner_is_team1'] = (data['toss_winner'] == data['team1']).astype(int)
-    data['toss_winner_batted_first'] = ((data['toss_winner'] == data['team1']) & (data['toss_decision'] == 'bat') | (data['toss_winner'] == data['team2']) & (data['toss_decision'] == 'field')).astype(int)
-    return data
-```
-
-- **Temporal Features**: Includes the year, month, and day of the week.
-- **Toss Features**: Indicates whether the toss winner chose to bat or field first.
-
-## 7. Encoding Categorical Features
-
-The `encode_categorical_features` function encodes categorical columns to prepare them for modeling.
-
-```python
-def encode_categorical_features(data):
-    """Encode categorical features"""
-    encoders = {column: LabelEncoder().fit_transform(data[column].fillna('Unknown')) for column in ['team1', 'team2', 'venue', 'toss_winner', 'toss_decision', 'winner', 'season'] if column in data.columns}
-    return data, encoders
-```
-
-- **Encoding**: Transforms textual data into a machine-readable format.
-
-## 8. Main Preprocessing Function
-
-The `preprocess_data` function orchestrates the entire preprocessing workflow.
-
-```python
-def preprocess_data(match_data, match_info):
-    """Main preprocessing function"""
-    match_summary = aggregate_match_data(match_data)
-    combined_data = pd.merge(match_summary, match_info.rename(columns={'id': 'match_id'}), on='match_id', how='inner')
-    combined_data = filter_special_teams(combined_data)
-    combined_data = create_match_features(combined_data)
-    combined_data = create_team_features(combined_data)
-    combined_data = process_venue_features(combined_data)
-    combined_data['result'] = (combined_data['winner'] == combined_data['team1']).astype(int)
-    combined_data, encoders = encode_categorical_features(combined_data)
-    combined_data.drop(['date', 'winner'], axis=1, errors='ignore', inplace=True)
-    pd.to_pickle(encoders, '../data/label_encoders.pkl')
-    return combined_data
-```
-
-- **Workflow**: This function ties all the preprocessing steps together, creating a dataset ready for model training.
-
-
+* Venue Impact: Considers venue statistics for match predictions
 
 ### Model Training (`train_model.py`)
 
-- **Purpose**: To develop a predictive model capable of forecasting match outcomes.
-- **Process**:
-  - **Data Augmentation**: Enhances the dataset by simulating reversed scenarios.
-  - **Feature Selection**: Chooses relevant features based on historical importance.
-  - **Model Selection**: Utilizes RandomForest due to its efficacy in handling diverse datasets.
-  - **Hyperparameter Tuning**: Applies GridSearchCV to find the most effective model settings.
-  - **Model Evaluation**: Assesses the model on unseen data to gauge its predictive power.
-  - **Serialization**: Saves the trained model for later use in predictions.
+* Purpose: To develop a predictive model capable of forecasting match outcomes
+* Process:
+  * Data Augmentation: Enhances the dataset by simulating reversed scenarios
+  * Feature Selection: Chooses relevant features based on historical importance
+  * Model Selection: Utilizes RandomForest due to its efficacy in handling diverse datasets
+  * Hyperparameter Tuning: Applies GridSearchCV to find the most effective model settings
+  * Model Evaluation: Assesses the model on unseen data to gauge its predictive power
+  * Serialization: Saves the trained model for later use in predictions
 
+### Explanation to Model Training Script
 
-
-### Explantion to Model Training Script
-
-The script involves several steps:
-1. Augmenting the dataset by swapping team positions.
-2. Preparing data by loading and encoding.
-3. Training the RandomForest model using GridSearchCV.
-4. Evaluating and saving the model.
-
-Let’s go through each part in detail.
-
----
-
-### 1. Data Augmentation with Team Swaps
+#### 1. Data Augmentation with Team Swaps
 
 This function augments the data by swapping team positions to simulate every possible match scenario, helping the model learn more general patterns.
 
@@ -224,13 +160,11 @@ def augment_data_with_team_swaps(data):
 ```
 
 **Key Actions**:
-- Swaps `team1` and `team2`.
-- Reverses the match result to maintain consistency.
-- Doubles the dataset size by concatenating the original and swapped data.
+* Swaps `team1` and `team2`
+* Reverses the match result to maintain consistency
+* Doubles the dataset size by concatenating the original and swapped data
 
----
-
-### 2. Load and Prepare Data
+#### 2. Load and Prepare Data
 
 This function prepares the data for the model by loading, filtering, augmenting, and encoding it.
 
@@ -252,13 +186,11 @@ def load_and_prepare_data():
 ```
 
 **Key Actions**:
-- Filters out irrelevant features.
-- Encodes categorical variables.
-- Splits the data into features (X) and the target (y).
+* Filters out irrelevant features
+* Encodes categorical variables
+* Splits the data into features (X) and the target (y)
 
----
-
-### 3. Train the RandomForest Model
+#### 3. Train the RandomForest Model
 
 This section sets up the RandomForest classifier, optimizes its parameters with GridSearchCV, and trains it.
 
@@ -277,13 +209,11 @@ def train_model():
 ```
 
 **Key Actions**:
-- Splits the data into training and testing sets.
-- Defines a grid of parameters to find the optimal settings.
-- Trains the model and evaluates its accuracy on the test set.
+* Splits the data into training and testing sets
+* Defines a grid of parameters to find the optimal settings
+* Trains the model and evaluates its accuracy on the test set
 
----
-
-### 4. Save the Model
+#### 4. Save the Model
 
 This function saves the trained model along with its metadata for later use in making predictions.
 
@@ -300,19 +230,20 @@ def save_model(grid_search):
 ```
 
 **Key Actions**:
-- Uses `joblib` to serialize and save the model and its encoders.
-
+* Uses `joblib` to serialize and save the model and its encoders
 
 ### Web Interface (`streamlit_main.py`)
 
-- **Purpose**: Provides a graphical user interface to interact with the trained model.
-- **Features**:
-  - **User Input**: Allows users to input match conditions such as teams, venue, and toss decisions.
-  - **Model Interaction**: Processes input through the model to predict outcomes.
-  - **Result Display**: Shows the predicted probabilities and outcomes in a user-friendly manner.
+* Purpose: Provides a graphical user interface to interact with the trained model
+* Features:
+  * User Input: Allows users to input match conditions such as teams, venue, and toss decisions
+  * Model Interaction: Processes input through the model to predict outcomes
+  * Result Display: Shows the predicted probabilities and outcomes in a user-friendly manner
 
-### Explantion to Streamlit Script
-### Part 1: Importing Libraries
+### Explanation to Streamlit Script
+
+#### Part 1: Importing Libraries
+
 **Code Snippet:**
 ```python
 import streamlit as st
@@ -322,12 +253,12 @@ from datetime import datetime
 ```
 
 **Explanation:**
-- **streamlit (`st`)**: Used to create and control the web app's interface.
-- **pandas (`pd`)**: For data manipulation, particularly to format the input data for the model.
-- **joblib**: For loading the trained machine learning model.
-- **datetime**: To fetch the current date for real-time data inputs like `season`.
+* streamlit (`st`): Used to create and control the web app's interface
+* pandas (`pd`): For data manipulation, particularly to format the input data for the model
+* joblib: For loading the trained machine learning model
+* datetime: To fetch the current date for real-time data inputs like `season`
 
-### Part 2: Loading the Model
+#### Part 2: Loading the Model
 
 **Code Snippet:**
 ```python
@@ -341,10 +272,10 @@ def load_model():
 ```
 
 **Explanation:**
-- Tries to load the serialized model (`cricket_predictor_v3.pkl`).
-- Displays an error in the Streamlit interface if the loading fails.
+* Tries to load the serialized model (`cricket_predictor_v3.pkl`)
+* Displays an error in the Streamlit interface if the loading fails
 
-### Part 3: Preparing the Input Data
+#### Part 3: Preparing the Input Data
 
 **Code Snippet:**
 ```python
@@ -364,11 +295,11 @@ def prepare_input(team1, team2, toss_winner, toss_decision, model_artifacts):
 ```
 
 **Explanation:**
-- Constructs a dictionary with match details.
-- Converts this dictionary into a DataFrame.
-- Uses pre-fitted encoders (loaded with the model) to transform categorical features into machine-readable formats.
+* Constructs a dictionary with match details
+* Converts this dictionary into a DataFrame
+* Uses pre-fitted encoders (loaded with the model) to transform categorical features into machine-readable formats
 
-### Part 4: Main Application Function
+#### Part 4: Main Application Function
 
 **Code Snippet:**
 ```python
@@ -395,64 +326,71 @@ def main():
 ```
 
 **Explanation:**
-- **Page Setup**: Configures the Streamlit page with a title and icon.
-- **Model Loading**: Attempts to load the machine learning model and continues if successful.
-- **User Inputs**: Allows the user to select teams, the toss winner, and the toss decision via dropdown menus.
-- **Prediction Trigger**: A button that, when clicked, checks if different teams are selected, prepares the input data, makes a prediction using the model, and displays the probabilities of each team winning.
-
-
+* Page Setup: Configures the Streamlit page with a title and icon
+* Model Loading: Attempts to load the machine learning model and continues if successful
+* User Inputs: Allows the user to select teams, the toss winner, and the toss decision via dropdown menus
+* Prediction Trigger: A button that, when clicked, checks if different teams are selected, prepares the input data, makes a prediction using the model, and displays the probabilities of each team winning
 ## Usage Instructions
 
-1. **Set up the Environment**:
-   - Install Python and required libraries:
-     ```bash
-     pip install -r requirements.txt
-     ```
+1. Set up the Environment:
+```bash
+pip install -r requirements.txt
+```
 
-2. **Prepare the Data**:
-   - Download and place the data in the appropriate directory from [Kaggle](https://www.kaggle.com/datasets/utkarshtomar736/odi-mens-cricket-match-data-2002-2023).
-   - Run the preprocessing script to ready the data for training:
-     ```bash
-     python scripts/preprocess.py
-     ```
+2. Prepare the Data:
+* Download data from [Kaggle](https://www.kaggle.com/datasets/utkarshtomar736/odi-mens-cricket-match-data-2002-2023)
+* Run preprocessing:
+```bash
+python scripts/preprocess.py
+```
 
-3. **Train the Model**:
-   - Navigate to the scripts directory and execute the training script:
-     ```bash
-     python train_model.py
-     ```
+3. Train the Model:
+```bash
+python scripts/train_model.py
+```
 
-4. **Run the Web Interface**:
-   - Launch the Streamlit application to start making predictions:
-     ```bash
-     streamlit run streamlit_main.py
-     ```
+4. Launch the Application:
+```bash
+streamlit run streamlit_main.py
+```
 
-## System Performance and Metrics
+## System Performance
 
-- **Prediction Accuracy**: Typically achieves 70-75% accuracy on testing data.
-- **Critical Features**: Includes team performance metrics, historical match outcomes, and venue specifics.
-
-## Future Enhancements
-
-- **Model Improvements**: Explore more sophisticated algorithms like XGBoost or deep learning approaches.
-- **Data Enrichment**: Incorporate real-time data feeds for dynamic updating.
-- **Feature Expansion**: Add new predictors such as player fitness, weather conditions, and more detailed team analytics.
-
-Certainly! Here's an additional section to include in the README for showcasing screenshots of the application. This will help users visualize the interface and functionality of your Cricket Match Prediction System.
-
----
-Certainly! Here's how you can add a section to your README to include a link to the hosted version of the Cricket Match Prediction System application:
-
----
+* Prediction Accuracy: 70-75% on test data
+* Key Predictive Features:
+  * Team win rates
+  * Head-to-head performance
+  * Venue statistics
+  * Toss decisions
+  * Recent form
 
 ## Hosted Application
 
-Experience the Cricket Match Prediction System in action by visiting the live application at the link below:
+Access the live application at:
+[Cricket Match Prediction System](https://matchresultprediction.streamlit.app)
 
-[**Access the Cricket Match Prediction System**](https://matchresultprediction.streamlit.app)
+## Future Enhancements
 
----
+1. Model Improvements:
+   * Explore advanced algorithms
+   * Implement ensemble methods
+   * Add real-time updates
+
+2. Feature Expansion:
+   * Player statistics
+   * Weather conditions
+   * Team composition
+   * Historical performance trends
+
+## Dataset Information
+
+The project uses ODI cricket match data from 2002-2023, including:
+* Ball-by-ball match data
+* Match metadata and results
+* Team and player information
+* Venue and condition details
+
+[Dataset Source](https://www.kaggle.com/datasets/utkarshtomar736/odi-mens-cricket-match-data-2002-2023)
 
 ## Screenshots
 
@@ -473,5 +411,3 @@ Experience the Cricket Match Prediction System in action by visiting the live ap
 ![Model Metrics](https://github.com/user-attachments/assets/37d8e2d1-e16d-4ec5-a482-a79517171001)
 
 *Description: This section of the application provides insights into the model's performance metrics and feature importance, giving users an understanding of how predictions are derived.*
-
----
