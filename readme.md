@@ -106,6 +106,17 @@ MatchPrediction/
 Certainly! Here's an additional section to include in the README for showcasing screenshots of the application. This will help users visualize the interface and functionality of your Cricket Match Prediction System.
 
 ---
+Certainly! Here's how you can add a section to your README to include a link to the hosted version of the Cricket Match Prediction System application:
+
+---
+
+## Hosted Application
+
+Experience the Cricket Match Prediction System in action by visiting the live application at the link below:
+
+[**Access the Cricket Match Prediction System**](https://matchresultprediction.streamlit.app)
+
+---
 
 ## Screenshots
 
@@ -117,24 +128,14 @@ Certainly! Here's an additional section to include in the README for showcasing 
 
 ### Prediction Results
 
-![Prediction Results](path_to_screenshot_here)
+![Prediction Results](https://github.com/user-attachments/assets/7f1ec308-8d09-4ef0-8bd8-e9df9d3c82a5)
 
 *Description: After submitting the match details, this screenshot shows the predicted outcome including the probabilities for each team winning the match.*
 
 ### Model Accuracy and Metrics
 
-![Model Metrics](path_to_screenshot_here)
+![Model Metrics](https://github.com/user-attachments/assets/37d8e2d1-e16d-4ec5-a482-a79517171001)
 
 *Description: This section of the application provides insights into the model's performance metrics and feature importance, giving users an understanding of how predictions are derived.*
 
-### Interactive Features
-
-![Interactive Features](path_to_screenshot_here)
-
-*Description: This screenshot highlights additional interactive features of the application, such as options to modify or explore different data inputs and settings.*
-
 ---
-
-**Note:** Replace `path_to_screenshot_here` with the actual paths to the images of your application. You may upload these images to a public web server or include them in your repository and link directly to them.
-
-This section will enhance the README by providing visual context to your textual descriptions, making it easier for others to understand and appreciate the capabilities of your Cricket Match Prediction System.
