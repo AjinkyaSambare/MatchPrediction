@@ -111,7 +111,7 @@ Certainly! Here's an additional section to include in the README for showcasing 
 
 ### Web Interface Overview
 
-![Web Interface Overview](<img width="1680" alt="Image" src="https://github.com/user-attachments/assets/b0c40f34-f1a6-4f78-abd9-326afc4520e5" />)
+![Web Interface Overview](img width="1680" alt="Image" src="https://github.com/user-attachments/assets/b0c40f34-f1a6-4f78-abd9-326afc4520e5")
 
 *Description: This screenshot displays the main page of the Streamlit web application, where users can input match details for prediction.*
 
