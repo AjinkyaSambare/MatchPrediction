@@ -4,6 +4,42 @@ import joblib
 from datetime import datetime
 from sklearn.metrics import precision_score, recall_score, f1_score, accuracy_score, confusion_matrix, roc_auc_score
 
+# Global variables for team and venue data
+TEAM_RATINGS = {
+    "India": 0.85,
+    "Australia": 0.82,
+    "England": 0.78,
+    "South Africa": 0.75,
+    "New Zealand": 0.74,
+    "Pakistan": 0.72,
+    "Sri Lanka": 0.68,
+    "Bangladesh": 0.65,
+    "West Indies": 0.63,
+    "Afghanistan": 0.60,
+    "Zimbabwe": 0.55,
+    "Ireland": 0.52
+}
+
+HOME_VENUES = {
+    "MCG, Melbourne": "Australia",
+    "Lord's, London": "England",
+    "Eden Gardens, Kolkata": "India",
+    "SCG, Sydney": "Australia",
+    "Wanderers, Johannesburg": "South Africa",
+    "Gaddafi Stadium, Lahore": "Pakistan",
+    "R. Premadasa Stadium, Colombo": "Sri Lanka",
+    "Shere Bangla Stadium, Dhaka": "Bangladesh",
+    "Wankhede Stadium, Mumbai": "India",
+    "M. Chinnaswamy Stadium, Bangalore": "India",
+    "Adelaide Oval, Adelaide": "Australia",
+    "Basin Reserve, Wellington": "New Zealand",
+    "Kensington Oval, Barbados": "West Indies"
+}
+
+TEAMS = list(TEAM_RATINGS.keys())
+
+VENUES = list(HOME_VENUES.keys()) + ["Dubai International Stadium", "neutral"]
+
 def load_model():
     """Load model artifacts"""
     try:
@@ -13,44 +49,61 @@ def load_model():
         st.error(f"Error loading model: {str(e)}")
         return None
 
-def prepare_input(team1, team2, toss_winner, toss_decision, model_artifacts):
-    """Prepare input data with all required features"""
+def prepare_input(team1, team2, toss_winner, toss_decision, venue, model_artifacts):
+    """Prepare input data with dynamic team statistics"""
+    
+    # Calculate home advantage
+    home_advantage = 0.1  # 10% advantage for home team
+    venue_advantage = 0.0
+    if venue in HOME_VENUES:
+        if HOME_VENUES[venue] == team1:
+            venue_advantage = home_advantage
+        elif HOME_VENUES[venue] == team2:
+            venue_advantage = -home_advantage
+    
+    # Calculate toss advantage
+    toss_advantage = 0.05  # 5% advantage for winning the toss
+    toss_factor = toss_advantage if toss_winner == team1 else -toss_advantage
+    
+    # Calculate base win rates using team ratings
+    team1_win_rate = TEAM_RATINGS.get(team1, 0.5)
+    team2_win_rate = TEAM_RATINGS.get(team2, 0.5)
+    
+    # Adjust win rates based on venue and toss
+    team1_adjusted_rate = min(0.95, max(0.05, team1_win_rate + venue_advantage + toss_factor))
+    team2_adjusted_rate = min(0.95, max(0.05, team2_win_rate - venue_advantage - toss_factor))
+    
+    # Calculate matches played (hypothetical data based on team ratings)
+    base_matches = 100
+    team1_matches = int(base_matches * TEAM_RATINGS.get(team1, 0.5))
+    team2_matches = int(base_matches * TEAM_RATINGS.get(team2, 0.5))
+    
     input_data = {
         'season': str(datetime.now().year),
         'team1': team1,
         'team2': team2,
         'toss_winner': toss_winner,
         'toss_decision': toss_decision,
-        'venue': 'neutral',
+        'venue': venue,
         'year': datetime.now().year,
         'month': datetime.now().month,
         'day_of_week': datetime.now().weekday(),
         'toss_winner_is_team1': 1 if toss_winner == team1 else 0,
         'toss_winner_batted_first': 1 if toss_decision == 'bat' else 0,
-        'team1_matches': 100,
-        'team2_matches': 100,
-        'team1_win_rate': 0.5,
-        'team2_win_rate': 0.5,
-        'matches_at_venue': 10
+        'team1_matches': team1_matches,
+        'team2_matches': team2_matches,
+        'team1_win_rate': team1_adjusted_rate,
+        'team2_win_rate': team2_adjusted_rate,
+        'matches_at_venue': 50 if venue != 'neutral' else 10
     }
     
     df = pd.DataFrame([input_data])
-    encoders = model_artifacts['encoders']
-    categorical_cols = ['team1', 'team2', 'venue', 'toss_winner', 'toss_decision', 'season']
     
-    for col in categorical_cols:
-        if col in encoders:
-            try:
-                df[col] = encoders[col].transform(df[col].astype(str))
-            except:
-                df[col] = encoders[col].transform([encoders[col].classes_[0]])
+    # Calculate win probabilities directly based on adjusted rates
+    team1_prob = (team1_adjusted_rate / (team1_adjusted_rate + team2_adjusted_rate))
+    team2_prob = 1 - team1_prob
     
-    feature_columns = model_artifacts['feature_columns']
-    for col in feature_columns:
-        if col not in df.columns:
-            df[col] = 0
-            
-    return df[feature_columns]
+    return df, team1_prob, team2_prob
 
 def main():
     # Page config
@@ -61,15 +114,13 @@ def main():
         initial_sidebar_state="expanded"
     )
     
-    # Custom CSS for a more formal appearance
+    # Custom CSS
     st.markdown("""
         <style>
-        /* Base styling */
         .stApp {
             background-color: #f8f9fa;
         }
         
-        /* Header styling */
         .header-container {
             background-color: #ffffff;
             padding: 2rem;
@@ -86,12 +137,10 @@ def main():
             margin-bottom: 1rem;
         }
         
-        /* Content card styling */
         .content-card {
             
         }
         
-        /* Button styling */
         .stButton>button {
             background-color: #007bff;
             color: white;
@@ -107,7 +156,6 @@ def main():
             background-color: #0056b3;
         }
         
-        /* Results styling */
         .prediction-results {
             background-color: #f8f9fa;
             padding: 1.5rem;
@@ -141,20 +189,14 @@ def main():
         st.markdown('<div class="content-card">', unsafe_allow_html=True)
         st.markdown("### Match Configuration")
         
-        # Teams selection
-        teams = [
-            "India", "Australia", "England", "South Africa",
-            "New Zealand", "Pakistan", "Sri Lanka", "Bangladesh"
-        ]
-        
         col1, col2 = st.columns(2)
         with col1:
-            team1 = st.selectbox("Team 1", teams)
+            team1 = st.selectbox("Team 1", TEAMS)
         with col2:
-            team2 = st.selectbox("Team 2", teams, index=1)
+            team2 = st.selectbox("Team 2", TEAMS, index=1)
         
-        # Match details
-        col3, col4 = st.columns(2)
+        # Match details with venue
+        col3, col4, col5 = st.columns(3)
         with col3:
             toss_winner = st.selectbox("Toss Winner", [team1, team2])
         with col4:
@@ -162,6 +204,8 @@ def main():
                 "Toss Decision",
                 ["Batting First", "Fielding First"]
             )
+        with col5:
+            venue = st.selectbox("Venue", VENUES)
         
         # Convert toss decision
         toss_decision = 'bat' if 'Batting' in toss_decision else 'field'
@@ -174,9 +218,8 @@ def main():
                 st.error("Please select different teams for prediction")
             else:
                 try:
-                    features = prepare_input(team1, team2, toss_winner, toss_decision, model_artifacts)
-                    model = model_artifacts['model']
-                    probs = model.predict_proba(features)[0]
+                    # Get feature data and probabilities
+                    features, team1_prob, team2_prob = prepare_input(team1, team2, toss_winner, toss_decision, venue, model_artifacts)
                     
                     # Display prediction results
                     st.markdown('<div class="content-card prediction-results">', unsafe_allow_html=True)
@@ -184,13 +227,13 @@ def main():
                     
                     col1, col2 = st.columns(2)
                     with col1:
-                        st.metric(f"{team1} Win Probability", f"{probs[1]*100:.1f}%")
+                        st.metric(f"{team1} Win Probability", f"{team1_prob*100:.1f}%")
                     with col2:
-                        st.metric(f"{team2} Win Probability", f"{probs[0]*100:.1f}%")
+                        st.metric(f"{team2} Win Probability", f"{team2_prob*100:.1f}%")
                     
                     # Winner announcement
-                    winner = team1 if probs[1] > probs[0] else team2
-                    win_prob = max(probs[1], probs[0]) * 100
+                    winner = team1 if team1_prob > team2_prob else team2
+                    win_prob = max(team1_prob, team2_prob) * 100
                     
                     st.markdown(f"""
                         <div class="winner-announcement">
@@ -201,41 +244,24 @@ def main():
                         </div>
                     """, unsafe_allow_html=True)
                     
-                    st.markdown('</div>', unsafe_allow_html=True)
+                    # Factors affecting prediction
+                    st.markdown("### Key Factors Affecting Prediction")
                     
-                    # Now display metrics below the results
-                    st.markdown('<div class="content-card">', unsafe_allow_html=True)
-                    st.markdown("## Model Performance Analysis")
+                    # Display venue advantage if applicable
+                    if venue in HOME_VENUES:
+                        home_team = HOME_VENUES[venue]
+                        if home_team in [team1, team2]:
+                            st.info(f"🏟️ Home Advantage: {home_team} has home advantage at {venue}")
                     
-                    # Primary Metrics
-                    st.markdown("### Primary Metrics")
-                    col1, col2, col3, col4 = st.columns(4)
-                    with col1:
-                        st.metric("Accuracy", "0.85")
-                    with col2:
-                        st.metric("Precision", "0.83")
-                    with col3:
-                        st.metric("Recall", "0.81")
-                    with col4:
-                        st.metric("F1 Score", "0.82")
+                    # Display toss advantage
+                    st.info(f"🎲 Toss Advantage: {toss_winner} won the toss and chose to {toss_decision} first")
                     
-                    # Secondary Metrics
-                    st.markdown("### Secondary Metrics")
+                    # Display team ratings
                     col1, col2 = st.columns(2)
                     with col1:
-                        st.metric("ROC-AUC", "0.88")
+                        st.info(f"📊 {team1} Rating: {TEAM_RATINGS.get(team1, 0.5)*100:.1f}%")
                     with col2:
-                        st.metric("Specificity", "0.87")
-                    
-                    # Confusion Matrix
-                    st.markdown("### Confusion Matrix")
-                    col1, col2 = st.columns(2)
-                    with col1:
-                        st.metric("True Positives", "150")
-                        st.metric("False Negatives", "20")
-                    with col2:
-                        st.metric("False Positives", "30")
-                        st.metric("True Negatives", "140")
+                        st.info(f"📊 {team2} Rating: {TEAM_RATINGS.get(team2, 0.5)*100:.1f}%")
                     
                     st.markdown('</div>', unsafe_allow_html=True)
                     
