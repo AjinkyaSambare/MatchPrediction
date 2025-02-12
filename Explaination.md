@@ -185,6 +185,19 @@ Each alternative has specific advantages and disadvantages, with RandomForest of
    - Win probabilities are displayed, and the team with the higher probability is highlighted as the predicted winner.
    - Updates are immediate, showing results as soon as users request a prediction.
 
+### Local vs libraries Based Traning 
+1. **Libraries Utilized**:
+   - **Pandas and NumPy**: Used for handling and manipulating the dataset.
+   - **Scikit-learn**: Provides tools for splitting the dataset, building the RandomForest model, tuning it with GridSearchCV, and evaluating its performance.
+   - **Joblib**: Used for saving the trained model and other components for later use.
+
+2. **Key Processes in the Code**:
+   - **Data Preparation**: The dataset is augmented by swapping team data and encoding categorical variables to prepare it for the model.
+   - **Model Training**: A RandomForest model is trained using GridSearchCV to find the best parameters. This training process occurs on your local machine.
+   - **Evaluation and Saving**: The trained model is evaluated for accuracy and other metrics, and the model along with necessary metadata is saved using joblib.
+
+The code is indeed performing "local training," but it leverages powerful machine learning libraries to simplify the process and improve performance. The use of libraries like Scikit-learn significantly reduces the complexity and amount of code needed to implement effective machine learning solutions. This allows you to focus more on modeling and less on the underlying algorithmic implementation.
+
 
 
 
