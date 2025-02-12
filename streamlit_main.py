@@ -42,7 +42,7 @@ VENUES = list(HOME_VENUES.keys()) + ["Dubai International Stadium", "neutral"]
 def load_model():
     """Load model artifacts"""
     try:
-        model_artifacts = joblib.load('/Users/Ajinkya25/Documents/Idea-Labs/TrainModels/MatchPrediction/models/cricket_predictor_v3.pkl')
+        model_artifacts = joblib.load('models/cricket_predictor_v3.pkl')
         return model_artifacts
     except Exception as e:
         st.error(f"Error loading model: {str(e)}")
