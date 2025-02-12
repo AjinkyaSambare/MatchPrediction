@@ -4,8 +4,6 @@ The Cricket Match Prediction System is a Streamlit-based web application that le
 The Cricket Match Prediction System uses historical match data to train a machine learning model, enabling real-time predictions of cricket match outcomes based on team performance, toss results, and venue conditions. Users can interactively adjust match settings through a web interface to see how different factors influence the predicted results.
 
 ### Steps involved in the Cricket Match Prediction System?
-Data Collection:
-- Gather data from Kaggle, focusing on historical One Day International (ODI) match data that includes team performances, match outcomes, venues, and other relevant statistics.
 
 ### Preprocessing the dataset?
 - Data Loading: Reads match data and info from CSV files.
