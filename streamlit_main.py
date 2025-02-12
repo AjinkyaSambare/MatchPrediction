@@ -37,13 +37,12 @@ HOME_VENUES = {
 }
 
 TEAMS = list(TEAM_RATINGS.keys())
-
 VENUES = list(HOME_VENUES.keys()) + ["Dubai International Stadium", "neutral"]
 
 def load_model():
     """Load model artifacts"""
     try:
-        model_artifacts = joblib.load('models/cricket_predictor_v3.pkl')
+        model_artifacts = joblib.load('/Users/Ajinkya25/Documents/Idea-Labs/TrainModels/MatchPrediction/models/cricket_predictor_v3.pkl')
         return model_artifacts
     except Exception as e:
         st.error(f"Error loading model: {str(e)}")
@@ -114,61 +113,120 @@ def main():
         initial_sidebar_state="expanded"
     )
     
-    # Custom CSS
+    # Custom CSS with dark mode support
     st.markdown("""
         <style>
+        /* Base Theme Variables */
+        :root {
+            --background-color: var(--st-color-background-primary);
+            --text-color: var(--st-color-text-primary);
+            --secondary-text: var(--st-color-text-secondary);
+            --card-bg: var(--st-color-background-secondary);
+            --border-color: var(--st-color-border-primary);
+            --primary-color: #007bff;
+            --success-color: #28a745;
+            --hover-color: #0056b3;
+        }
+
+        /* Main container styling */
         .stApp {
-            background-color: #f8f9fa;
+            background-color: var(--background-color);
+            color: var(--text-color);
+            transition: all 0.3s ease;
         }
         
+        /* Header styling */
         .header-container {
-            background-color: #ffffff;
+            background-color: var(--card-bg);
             padding: 2rem;
             border-radius: 10px;
             box-shadow: 0 2px 4px rgba(0,0,0,0.1);
             margin-bottom: 2rem;
+            border: 1px solid var(--border-color);
         }
         
         .header-title {
-            color: #1a1a1a;
+            color: var(--text-color);
             font-size: 2.2rem;
             font-weight: 600;
             text-align: center;
             margin-bottom: 1rem;
         }
         
+        /* Content card styling */
         .content-card {
-            
+            background-color: var(--card-bg);
+            padding: 1.5rem;
+            border-radius: 10px;
+            border: 1px solid var(--border-color);
+            margin-bottom: 1.5rem;
         }
         
+        /* Button styling */
         .stButton>button {
-            background-color: #007bff;
+            background-color: var(--primary-color);
             color: white;
             font-weight: 500;
             padding: 0.5rem 2rem;
             border-radius: 5px;
             border: none;
-            transition: background-color 0.3s;
+            transition: all 0.3s;
             width: 100%;
         }
         
         .stButton>button:hover {
-            background-color: #0056b3;
+            background-color: var(--hover-color);
+            box-shadow: 0 2px 6px var(--border-color);
         }
         
+        /* Prediction results styling */
         .prediction-results {
-            background-color: #f8f9fa;
+            background-color: var(--card-bg);
             padding: 1.5rem;
             border-radius: 8px;
             margin-top: 2rem;
             text-align: center;
+            border: 1px solid var(--border-color);
         }
         
         .winner-announcement {
-            color: #28a745;
+            color: var(--success-color);
             font-size: 1.5rem;
             font-weight: 600;
             margin-top: 1rem;
+        }
+        
+        /* Select box styling */
+        .stSelectbox > div > div {
+            background-color: var(--card-bg);
+            color: var(--text-color);
+            border-color: var(--border-color);
+        }
+        
+        /* Metrics styling */
+        .stMetric {
+            background-color: var(--card-bg);
+            border: 1px solid var(--border-color);
+            padding: 1rem;
+            border-radius: 8px;
+        }
+        
+        /* Info box styling */
+        .stInfo {
+            background-color: var(--card-bg);
+            border-color: var(--border-color);
+            color: var(--text-color);
+        }
+        
+        /* Handle dark mode specifics */
+        @media (prefers-color-scheme: dark) {
+            .stMarkdown {
+                color: var(--text-color);
+            }
+            
+            .stMetric [data-testid="stMetricValue"] {
+                color: var(--text-color);
+            }
         }
         </style>
     """, unsafe_allow_html=True)
@@ -177,7 +235,9 @@ def main():
     st.markdown("""
         <div class="header-container">
             <h1 class="header-title">Cricket Match Prediction System</h1>
-            <p style="text-align: center; color: #666;">Advanced analytics for cricket match outcome prediction</p>
+            <p style="text-align: center; color: var(--secondary-text);">
+                Advanced analytics for cricket match outcome prediction
+            </p>
         </div>
     """, unsafe_allow_html=True)
     
@@ -222,7 +282,7 @@ def main():
                     features, team1_prob, team2_prob = prepare_input(team1, team2, toss_winner, toss_decision, venue, model_artifacts)
                     
                     # Display prediction results
-                    st.markdown('<div class="content-card prediction-results">', unsafe_allow_html=True)
+                    st.markdown('<div class="prediction-results">', unsafe_allow_html=True)
                     st.markdown("### Prediction Results")
                     
                     col1, col2 = st.columns(2)
@@ -238,7 +298,7 @@ def main():
                     st.markdown(f"""
                         <div class="winner-announcement">
                             Predicted Winner: {winner}<br>
-                            <small style="font-size: 1rem; color: #666;">
+                            <small style="font-size: 1rem; color: var(--secondary-text);">
                                 Win Probability: {win_prob:.1f}%
                             </small>
                         </div>
