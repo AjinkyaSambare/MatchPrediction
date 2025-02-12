@@ -44,12 +44,18 @@ Alternatives to RandomForest and Potential Impacts:
 Data Points Considered for Training: 
 - Team features, match context features, and temporal features reflect performance, strategic decisions, and seasonal variations.
 
+### Considered Data Points for training model
+1. **Team IDs** (`team1`, `team2`): Identifiers for the competing teams, encoded numerically.
+2. **Venue** (`venue`): Location of the match, also encoded to handle categorical data.
+3. **Toss Information** (`toss_winner`, `toss_decision`): Results of the coin toss, indicating which team won the toss and their decision (bat or field), encoded for model input.
+4. **Season** (`season`): Year or season of the match, encoded to reflect the temporal context.
+5. **Team Performance Metrics**: Includes team-specific statistics like win rates and number of matches played, adjusted for team perspective swaps.
+
 ### Why these points?
 The chosen data points for the predictive model are selected due to their significant impact on cricket match outcomes:
 - Team Features: Reflect the strength and experience of the teams, key factors in performance prediction.
 - Match Context Features: Venue and toss decisions influence game conditions and strategic advantages, crucial in cricket.
 - Temporal Feature: Accounts for variations in team strategies and compositions over different seasons or years.
-
 
 ### What is RandomForest
 RandomForest is an ensemble machine learning algorithm that combines multiple decision trees to improve overall prediction accuracy and control overfitting. It's used for both classification and regression tasks.
