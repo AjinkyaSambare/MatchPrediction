@@ -37,7 +37,7 @@ This code defines a process for training a RandomForestClassifier to predict out
 - Model Saving: Saves the trained model for easy reuse or deployment, ensuring consistent performance across different platforms.
 
 ### Deep dive into training a model?
-Why RandomForest? 
+### Why RandomForest? 
 - Robustness, handling mixed data types without scaling, and providing feature importance metrics.
 Alternatives to RandomForest and Potential Impacts: 
 - Decision Trees, SVM, Neural Networks.
